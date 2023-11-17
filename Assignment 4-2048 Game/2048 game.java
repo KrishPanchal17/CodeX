@@ -9,14 +9,19 @@ public class Game2048 extends JFrame {
     private static final int SIZE = 4;
     private int[][] board;
     private JLabel[][] labels;
+    private JLabel gameOverLabel;
 
     public Game2048() {
         setTitle("2048 Game");
         setSize(400, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new GridLayout(SIZE, SIZE));
+        setLayout(new BorderLayout());
 
-        initializeBoard();
+        JPanel boardPanel = new JPanel();
+        boardPanel.setLayout(new GridLayout(SIZE, SIZE));
+        add(boardPanel, BorderLayout.CENTER);
+
+        initializeBoard(boardPanel);
         addKeyListener(new ArrowKeyListener());
         setFocusable(true);
 
@@ -24,10 +29,14 @@ public class Game2048 extends JFrame {
         spawnRandomTile();
         updateUI();
 
+        gameOverLabel = new JLabel("", SwingConstants.CENTER);
+        gameOverLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        add(gameOverLabel, BorderLayout.SOUTH);
+
         setVisible(true);
     }
 
-    private void initializeBoard() {
+    private void initializeBoard(JPanel boardPanel) {
         board = new int[SIZE][SIZE];
         labels = new JLabel[SIZE][SIZE];
 
@@ -36,7 +45,9 @@ public class Game2048 extends JFrame {
                 board[i][j] = 0;
                 labels[i][j] = new JLabel("", SwingConstants.CENTER);
                 labels[i][j].setBorder(BorderFactory.createLineBorder(Color.BLACK));
-                add(labels[i][j]);
+                labels[i][j].setFont(new Font("Arial", Font.BOLD, 20));
+                labels[i][j].setPreferredSize(new Dimension(80, 80));
+                boardPanel.add(labels[i][j]);
             }
         }
     }
@@ -58,8 +69,40 @@ public class Game2048 extends JFrame {
         for (int i = 0; i < SIZE; i++) {
             for (int j = 0; j < SIZE; j++) {
                 labels[i][j].setText(board[i][j] == 0 ? "" : String.valueOf(board[i][j]));
+                labels[i][j].setBackground(getTileColor(board[i][j]));
             }
         }
+    }
+
+    private Color getTileColor(int value) {
+        // Color scheme based on tile values
+        switch (value) {
+            case 2:
+                return new Color(255, 240, 245); // Lavender Blush
+            case 4:
+                return new Color(255, 228, 225); // Misty Rose
+            case 8:
+                return new Color(255, 69, 0);    // Red-Orange
+            case 16:
+                return new Color(255, 165, 0);   // Orange
+            case 32:
+                return new Color(255, 215, 0);   // Gold
+            case 64:
+                return new Color(255, 255, 0);   // Yellow
+            case 128:
+            case 256:
+            case 512:
+                return new Color(152, 251, 152); // Pale Green
+            case 1024:
+            case 2048:
+                return new Color(0, 128, 0);    // Green
+            default:
+                return Color.WHITE;
+        }
+    }
+
+    private void showGameOver() {
+        gameOverLabel.setText("Game Over! You can't make any more moves.");
     }
 
     private boolean moveUp() {
@@ -156,27 +199,28 @@ public class Game2048 extends JFrame {
 
     private class ArrowKeyListener implements KeyListener {
         @Override
-        public void keyTyped(KeyEvent e) {}
+        public void keyTyped(KeyEvent e) {
+        }
 
         @Override
         public void keyPressed(KeyEvent e) {
             int keyCode = e.getKeyCode();
 
-            switch (keyCode) {
-                case KeyEvent.VK_UP:
-                case KeyEvent.VK_DOWN:
-                case KeyEvent.VK_LEFT:
-                case KeyEvent.VK_RIGHT:
-                    if (moveTiles(keyCode)) {
-                        spawnRandomTile();
-                        updateUI();
-                    }
-                    break;
+            if (keyCode == KeyEvent.VK_UP || keyCode == KeyEvent.VK_DOWN
+                    || keyCode == KeyEvent.VK_LEFT || keyCode == KeyEvent.VK_RIGHT) {
+                if (moveTiles(keyCode)) {
+                    spawnRandomTile();
+                    updateUI();
+                }
+                if (isGameOver()) {
+                    showGameOver();
+                }
             }
         }
 
         @Override
-        public void keyReleased(KeyEvent e) {}
+        public void keyReleased(KeyEvent e) {
+        }
 
         private boolean moveTiles(int direction) {
             boolean moved = false;
@@ -197,6 +241,31 @@ public class Game2048 extends JFrame {
             }
 
             return moved;
+        }
+
+        private boolean isGameOver() {
+            // Check if the game is over (no more possible moves)
+            // Return true if the game is over, false otherwise
+            // Check if there are any empty spaces
+            for (int i = 0; i < SIZE; i++) {
+                for (int j = 0; j < SIZE; j++) {
+                    if (board[i][j] == 0) {
+                        return false;
+                    }
+                }
+            }
+
+            // Check if there are any adjacent tiles with the same value
+            for (int i = 0; i < SIZE; i++) {
+                for (int j = 0; j < SIZE; j++) {
+                    if ((j < SIZE - 1 && board[i][j] == board[i][j + 1]) ||
+                            (i < SIZE - 1 && board[i][j] == board[i + 1][j])) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
     }
 
